@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3T_1R Monograph — Stephen Boyd @sspboyd</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+  :root {
+    --bg: #e8e4de;
+    --fg: #1a1a1a;
+    --mid: #777;
+    --border: #c8c4be;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  header h1 { font-size: 13px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; }
+  header span { color: var(--mid); font-size: 11px; }
+
+  #tabs {
+    display: flex;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 7px 14px;
+    cursor: pointer;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: none;
+    color: var(--mid);
+    margin-bottom: -1px;
+  }
+  .tab.active { color: var(--fg); border-bottom-color: var(--fg); }
+
+  .panel { display: none; padding: 20px; }
+  .panel.active { display: flex; gap: 24px; }
+  #panel-grid.active { display: block; }
+
+  /* SINGLE */
+  #sketch-wrap { flex-shrink: 0; }
+  #sketch-wrap canvas { display: block; }
+
+  #controls {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 210px;
+    max-width: 240px;
+  }
+
+  .section-head {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mid);
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .param { display: flex; flex-direction: column; gap: 4px; }
+  .param-row { display: flex; justify-content: space-between; align-items: baseline; }
+  .param-name { font-size: 11px; }
+  .param-val { font-size: 13px; font-weight: bold; min-width: 12px; text-align: right; }
+  .param-desc { font-size: 10px; color: var(--mid); }
+  input[type=range] { width: 100%; accent-color: var(--fg); cursor: pointer; height: 2px; }
+
+  #code-display {
+    font-size: 20px;
+    letter-spacing: 0.2em;
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .colour-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+  .colour-item { display: flex; flex-direction: column; gap: 3px; }
+  .colour-item label { font-size: 10px; color: var(--mid); letter-spacing: 0.06em; }
+  .colour-item input[type=color] {
+    width: 100%; height: 24px;
+    border: 1px solid var(--border);
+    padding: 0 2px; cursor: pointer;
+    background: none; border-radius: 0;
+  }
+  .colour-item .hex { font-size: 10px; color: var(--mid); }
+
+  /* GRID */
+  #grid-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  #grid-top label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mid); }
+  #grid-top select {
+    font-family: inherit;
+    font-size: 11px;
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    padding: 3px 6px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+  }
+  #grid-size-val { color: var(--mid); font-size: 11px; min-width: 32px; }
+  .sep { color: var(--border); }
+
+  #btn-random {
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--fg);
+    color: var(--bg);
+    border: 1px solid var(--fg);
+    padding: 6px 12px;
+    cursor: pointer;
+    width: 100%;
+  }
+  #btn-random:hover { opacity: 0.8; }
+
+  #btn-spacing {
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: none;
+    color: var(--mid);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    cursor: pointer;
+  }
+  #btn-spacing.flush {
+    color: var(--fg);
+    border-color: var(--fg);
+  }
+
+  #flat-grid { display: grid; gap: 3px; }
+
+  .cell { cursor: pointer; position: relative; flex-shrink: 0; }
+  .cell canvas { display: block; }
+  .cell-tip {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    font-size: 8px;
+    text-align: center;
+    padding: 2px 0;
+    opacity: 0;
+    transition: opacity 0.1s;
+    pointer-events: none;
+  }
+  .cell:hover .cell-tip { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>3T_1R Monograph</h1>
+  <span>256 variations — three triangles · one rotation</span>
+  <span style="margin-left:auto">Stephen Boyd · @sspboyd · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" style="color:inherit;text-decoration:none">CC BY-NC-SA 4.0</a></span>
+</header>
+
+<div id="tabs">
+  <button class="tab active" onclick="switchTab('single')">Single</button>
+  <button class="tab" onclick="switchTab('grid')">Grid · 256</button>
+</div>
+
+<!-- SINGLE VIEW -->
+<div id="panel-single" class="panel active">
+  <div id="sketch-wrap"></div>
+  <div id="controls">
+    <div><div class="section-head">Parameters</div></div>
+
+    <div class="param">
+      <div class="param-row">
+        <span class="param-name">T1 — top edge</span>
+        <span class="param-val" id="v-t1">1</span>
+      </div>
+      <span class="param-desc">base shape · cyano</span>
+      <input type="range" min="1" max="4" value="1" id="s-t1" oninput="onParam()">
+    </div>
+
+    <div class="param">
+      <div class="param-row">
+        <span class="param-name">T2 — bottom edge</span>
+        <span class="param-val" id="v-t2">1</span>
+      </div>
+      <span class="param-desc">accent · green</span>
+      <input type="range" min="1" max="4" value="1" id="s-t2" oninput="onParam()">
+    </div>
+
+    <div class="param">
+      <div class="param-row">
+        <span class="param-name">T3 — right edge</span>
+        <span class="param-val" id="v-t3">1</span>
+      </div>
+      <span class="param-desc">accent · purple</span>
+      <input type="range" min="1" max="4" value="1" id="s-t3" oninput="onParam()">
+    </div>
+
+    <div class="param">
+      <div class="param-row">
+        <span class="param-name">R — rotation</span>
+        <span class="param-val" id="v-r">1</span>
+      </div>
+      <span class="param-desc">x 90 deg</span>
+      <input type="range" min="1" max="4" value="1" id="s-r" oninput="onParam()">
+    </div>
+
+    <div id="code-display">1, 1, 1, 1</div>
+    <button id="btn-random" onclick="randomize()">Randomize</button>
+
+    <div>
+      <div class="section-head" style="margin-bottom:10px">Colours</div>
+      <div class="colour-grid">
+        <div class="colour-item">
+          <label>Background</label>
+          <input type="color" id="c-bg" value="#D3D9E2" oninput="onColour(this,'c-bg')">
+          <span class="hex" id="h-c-bg">#D3D9E2</span>
+        </div>
+        <div class="colour-item">
+          <label>T1 · cyano</label>
+          <input type="color" id="c-cyano" value="#315B8B" oninput="onColour(this,'c-cyano')">
+          <span class="hex" id="h-c-cyano">#315B8B</span>
+        </div>
+        <div class="colour-item">
+          <label>T2 · green</label>
+          <input type="color" id="c-green" value="#306D5A" oninput="onColour(this,'c-green')">
+          <span class="hex" id="h-c-green">#306D5A</span>
+        </div>
+        <div class="colour-item">
+          <label>T3 · purple</label>
+          <input type="color" id="c-purple" value="#363071" oninput="onColour(this,'c-purple')">
+          <span class="hex" id="h-c-purple">#363071</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GRID VIEW -->
+<div id="panel-grid" class="panel">
+  <div id="grid-top">
+    <label>Size</label>
+    <input type="range" id="grid-size-slider" min="36" max="120" value="60" oninput="onGridSize()">
+    <span id="grid-size-val">60px</span>
+    <span class="sep">|</span>
+    <label>Order · slowest</label>
+    <select id="loop-0" onchange="onLoopOrder()"></select>
+    <select id="loop-1" onchange="onLoopOrder()"></select>
+    <select id="loop-2" onchange="onLoopOrder()"></select>
+    <select id="loop-3" onchange="onLoopOrder()"></select>
+    <label>fastest</label>
+    <span class="sep">|</span>
+    <button id="btn-spacing" onclick="toggleSpacing()">Flush</button>
+  </div>
+  <div id="flat-grid"></div>
+</div>
+
+<script>
+// 3T_1R Monograph
+// Stephen Boyd · @sspboyd · sspboyd.ca
+//
+// Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+// CC BY-NC-SA 4.0 — https://creativecommons.org/licenses/by-nc-sa/4.0/
+//
+// ---- Constants ----
+const PHI = (1 + Math.sqrt(5)) / 2;
+const i_PHI = 1 / PHI;
+const divisions = [
+  Math.pow(i_PHI, 3),
+  Math.pow(i_PHI, 2),
+  i_PHI,
+  1 - Math.pow(i_PHI, 3)
+];
+
+const colourAlpha = 0xAA / 0xFF;
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+function getColours() {
+  return {
+    bg:     document.getElementById('c-bg').value,
+    cyano:  document.getElementById('c-cyano').value,
+    green:  hexToRgba(document.getElementById('c-green').value, colourAlpha),
+    purple: hexToRgba(document.getElementById('c-purple').value, colourAlpha),
+  };
+}
+
+// ---- Core draw ----
+function drawVariation(ctx, t1, t2, t3, r, w, h, colours) {
+  ctx.save();
+
+  ctx.fillStyle = colours.bg;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate(((r - 1) / 4.0) * Math.PI * 2);
+  ctx.translate(-w / 2, -h / 2);
+
+  // T1 — cyano: bottom-right > bottom-left > point on top edge > top-right
+  ctx.fillStyle = colours.cyano;
+  ctx.beginPath();
+  ctx.moveTo(w, h);
+  ctx.lineTo(0, h);
+  ctx.lineTo(divisions[t1 - 1] * w, 0);
+  ctx.lineTo(w, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // T2 — green: bottom-left > top-left > point on bottom edge
+  ctx.fillStyle = colours.green;
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  ctx.lineTo(0, 0);
+  ctx.lineTo(divisions[t2 - 1] * w, h);
+  ctx.closePath();
+  ctx.fill();
+
+  // T3 — purple: top-right > top-left > point on right edge
+  ctx.fillStyle = colours.purple;
+  ctx.beginPath();
+  ctx.moveTo(w, 0);
+  ctx.lineTo(0, 0);
+  ctx.lineTo(w, divisions[t3 - 1] * h);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ---- Single view ----
+let p5sketch;
+let sp = { t1: 1, t2: 1, t3: 1, r: 1 };
+const SINGLE_SIZE = 440;
+
+new p5(s => {
+  p5sketch = s;
+  s.setup = () => {
+    s.createCanvas(SINGLE_SIZE, SINGLE_SIZE).parent('sketch-wrap');
+    s.noLoop();
+  };
+  s.draw = () => {
+    drawVariation(s.drawingContext, sp.t1, sp.t2, sp.t3, sp.r, SINGLE_SIZE, SINGLE_SIZE, getColours());
+  };
+});
+
+function onParam() {
+  sp.t1 = parseInt(document.getElementById('s-t1').value);
+  sp.t2 = parseInt(document.getElementById('s-t2').value);
+  sp.t3 = parseInt(document.getElementById('s-t3').value);
+  sp.r  = parseInt(document.getElementById('s-r').value);
+  document.getElementById('v-t1').textContent = sp.t1;
+  document.getElementById('v-t2').textContent = sp.t2;
+  document.getElementById('v-t3').textContent = sp.t3;
+  document.getElementById('v-r').textContent  = sp.r;
+  document.getElementById('code-display').textContent = sp.t1 + ', ' + sp.t2 + ', ' + sp.t3 + ', ' + sp.r;
+  if (p5sketch) p5sketch.redraw();
+}
+
+function randomize() {
+  document.getElementById("s-t1").value = Math.ceil(Math.random() * 4);
+  document.getElementById("s-t2").value = Math.ceil(Math.random() * 4);
+  document.getElementById("s-t3").value = Math.ceil(Math.random() * 4);
+  document.getElementById("s-r").value  = Math.ceil(Math.random() * 4);
+  onParam();
+}
+
+function onColour(el, id) {
+  document.getElementById('h-' + id).textContent = el.value;
+  if (p5sketch) p5sketch.redraw();
+  if (document.getElementById('panel-grid').classList.contains('active')) buildGrid();
+}
+
+// ---- Grid view ----
+const PARAMS = ['R', 'T1', 'T2', 'T3'];
+let loopOrder = ['R', 'T3', 'T2', 'T1'];
+let gridSize = 60;
+let flushMode = false;
+
+function initLoopSelects() {
+  for (let i = 0; i < 4; i++) {
+    const sel = document.getElementById('loop-' + i);
+    PARAMS.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      if (p === loopOrder[i]) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+}
+
+function onLoopOrder() {
+  const chosen = [0,1,2,3].map(i => document.getElementById('loop-' + i).value);
+  const counts = {};
+  chosen.forEach(v => counts[v] = (counts[v] || 0) + 1);
+  const dup = Object.keys(counts).find(k => counts[k] > 1);
+  if (dup) {
+    const missing = PARAMS.find(p => !chosen.includes(p));
+    const seen = new Set();
+    loopOrder = chosen.map(v => {
+      if (seen.has(v)) return missing;
+      seen.add(v);
+      return v;
+    });
+    [0,1,2,3].forEach(i => document.getElementById('loop-' + i).value = loopOrder[i]);
+  } else {
+    loopOrder = chosen;
+  }
+  buildGrid();
+}
+
+function onGridSize() {
+  gridSize = parseInt(document.getElementById('grid-size-slider').value);
+  document.getElementById('grid-size-val').textContent = gridSize + 'px';
+  buildGrid();
+}
+
+function toggleSpacing() {
+  flushMode = !flushMode;
+  const btn = document.getElementById('btn-spacing');
+  btn.classList.toggle('flush', flushMode);
+  btn.textContent = flushMode ? 'Spaced' : 'Flush';
+  document.getElementById('flat-grid').style.gap = flushMode ? '0' : '3px';
+}
+
+function buildGrid() {
+  const grid = document.getElementById('flat-grid');
+  grid.innerHTML = '';
+  grid.style.gridTemplateColumns = 'repeat(16, ' + gridSize + 'px)';
+  grid.style.gap = flushMode ? '0' : '3px';
+  const colours = getColours();
+  const p0 = loopOrder[0], p1 = loopOrder[1], p2 = loopOrder[2], p3 = loopOrder[3];
+
+  for (let a = 1; a <= 4; a++) {
+    for (let b = 1; b <= 4; b++) {
+      for (let c = 1; c <= 4; c++) {
+        for (let d = 1; d <= 4; d++) {
+          const pv = {};
+          pv[p0] = a; pv[p1] = b; pv[p2] = c; pv[p3] = d;
+          const t1 = pv['T1'], t2 = pv['T2'], t3 = pv['T3'], r = pv['R'];
+
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.style.width = gridSize + 'px';
+          cell.style.height = gridSize + 'px';
+
+          const canvas = document.createElement('canvas');
+          canvas.width = gridSize;
+          canvas.height = gridSize;
+          drawVariation(canvas.getContext('2d'), t1, t2, t3, r, gridSize, gridSize, colours);
+          cell.appendChild(canvas);
+
+          const tip = document.createElement('div');
+          tip.className = 'cell-tip';
+          tip.textContent = t1 + ',' + t2 + ',' + t3 + ',' + r;
+          cell.appendChild(tip);
+
+          cell.addEventListener('click', () => {
+            document.getElementById('s-t1').value = t1;
+            document.getElementById('s-t2').value = t2;
+            document.getElementById('s-t3').value = t3;
+            document.getElementById('s-r').value  = r;
+            onParam();
+            switchTab('single');
+          });
+
+          grid.appendChild(cell);
+        }
+      }
+    }
+  }
+}
+
+// ---- Tabs ----
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.querySelector('.tab[onclick="switchTab(\'' + tab + '\')"]').classList.add('active');
+  if (tab === 'grid') buildGrid();
+}
+
+initLoopSelects();
+</script>
+</body>
+</html>
