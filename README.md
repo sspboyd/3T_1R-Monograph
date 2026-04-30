@@ -2,7 +2,7 @@
 
 A browser-based tool for exploring all 256 variations of the 3T_1R algorithm.
 
-**[Live demo →](https://3T_1R-Monograph.netlify.app)**
+**[Live demo →](https://monograph-3t-1r.netlify.app)**
 
 ---
 
