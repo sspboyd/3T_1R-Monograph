@@ -52,7 +52,7 @@ You are free to share and adapt this work provided you:
 
 ## About
 
-Stephen Boyd is a Toronto-based generative artist working in code since 2003. His practice centres on simple rule-based systems that produce emergent structure.
+Stephen Boyd (sspboyd) is a Toronto-based generative artist working in code since 2003. His practice centres on simple rule-based systems that produce emergent structure.
 
 - Website: [sspboyd.ca](https://sspboyd.ca)
 - Social: [@sspboyd](https://instagram.com/sspboyd)
